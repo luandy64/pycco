@@ -550,10 +550,7 @@ def monitor(sources, opts):
     import watchdog.events
     import watchdog.observers
 
-    # Watchdog operates on absolute paths, so map those to original paths
-    # as specified on the command line.
-    absolute_sources = dict((os.path.abspath(source), source)
-                            for source in sources)
+    directories = set(os.path.split(source)[0] for source in sources)
 
     class RegenerateHandler(watchdog.events.FileSystemEventHandler):
         """
@@ -567,8 +564,8 @@ def monitor(sources, opts):
             # Re-generate documentation from a source file if it was listed on
             # the command line. Watchdog monitors whole directories, so other
             # files may cause notifications as well.
-            if event.src_path in absolute_sources:
-                process([absolute_sources[event.src_path]],
+            if event.src_path in directories:
+                process(sources,
                         outdir=opts.outdir,
                         preserve_paths=opts.paths)
 
@@ -576,7 +573,6 @@ def monitor(sources, opts):
     # the command line and notifies the handler defined above.
     event_handler = RegenerateHandler()
     observer = watchdog.observers.Observer()
-    directories = set(os.path.split(source)[0] for source in sources)
     for directory in directories:
         observer.schedule(event_handler, path=directory)
 
